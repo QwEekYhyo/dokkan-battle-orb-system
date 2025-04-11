@@ -5,7 +5,12 @@
 #include <orb.hpp>
 #include <algorithm.hpp>
 
+#ifdef WIN32
+#include <windows.h>
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow) {
+#else
 int main() {
+#endif
     Board board;
     for (size_t x = 0; x < 5; x++) {
         for (size_t y = 0; y < 5; y++) {
@@ -13,21 +18,21 @@ int main() {
         }
     }
 
-    const size_t maxIndex = board.size() - 1;
+    constexpr size_t maxIndex = board.size() - 1;
     const float top = board[maxIndex][0].getPosition().y;
     const float bottom = top + Orb::RADIUS * 2;
     const float right = board[maxIndex][board[maxIndex].size() - 1].getPosition().x + Orb::RADIUS * 2;
 
+    unsigned int height = bottom;
+    unsigned int width = right + Orb::RADIUS;
+
     // create the window
-    sf::RenderWindow window(sf::VideoMode(800, 600), "Dokkan Battle");
+    sf::RenderWindow window(sf::VideoMode({width, height}), "Dokkan Battle", sf::Style::Close);
 
     // run the program as long as the window is open
     while (window.isOpen()) {
-        // check all the window's events that were triggered since the last iteration of the loop
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            // "close requested" event: we close the window
-            if (event.type == sf::Event::Closed)
+        while (const std::optional event = window.pollEvent()) {
+            if (event->is<sf::Event::Closed>())
                 window.close();
         }
 
@@ -57,10 +62,8 @@ int main() {
         }
 
         /* Loop circles using custom class */
-        for (size_t y = 0; y < board.size(); y++) {
-            auto& row = board[y];
-            for (size_t x = 0; x < row.size(); x++) {
-                Orb& orb = row[x];
+        for (auto& row : board) {
+            for (auto& orb : row) {
                 window.draw(orb);
             }
         }
@@ -96,7 +99,7 @@ int main() {
                         burst->burst();
                         window.draw(*burst);
                     }
-                    size_t x = burst->getX();
+                    const size_t x = burst->getX();
                     burst = x < board[orb->getY()].size() - 1 ? &board[orb->getY()][x + 1] : nullptr;
                 } while (burst && burst->color() == color);
             }
